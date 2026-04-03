@@ -16,6 +16,8 @@
     "db:init": "initdb -D .postgres-data",
     "db:up": "pg_ctl -D .postgres-data -l .postgres.log -o \"-p 5433\" start",
     "db:down": "pg_ctl -D .postgres-data stop",
+    "postinstall": "prisma generate --schema prisma/schema.prisma",
+    "prebuild": "prisma generate --schema prisma/schema.prisma",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "seed:agents": "ts-node scripts/seed-agents.ts",
