@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: venxa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: venxa
+      POSTGRES_PASSWORD: venxa
+      POSTGRES_DB: venxa_ai
+    ports:
+      - '5432:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+volumes:
+  db_data:

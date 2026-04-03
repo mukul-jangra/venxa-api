@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Expert" ADD COLUMN     "aiRating" DOUBLE PRECISION NOT NULL DEFAULT 4.5;

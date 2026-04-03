@@ -1,0 +1,489 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model PendingSignup {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String?
+  otpHash       String
+  otpExpiresAt  DateTime
+  lastSentAt    DateTime @default(now())
+  attempts      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PasswordResetOtp {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  otpHash       String
+  otpExpiresAt  DateTime
+  lastSentAt    DateTime @default(now())
+  attempts      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model User {
+  id            String             @id @default(cuid())
+  email         String             @unique
+  password      String
+  name          String?
+  createdAt     DateTime           @default(now())
+  conversations ChatConversation[]
+  expertConversations ExpertConversation[]
+  expertSessions ExpertSession[]
+  messages      ChatMessage[]
+  notificationDevices UserNotificationDevice[]
+  notifications UserNotification[]
+  paymentOrders PaymentOrder[]
+  privacyRequests PrivacyRequest[]
+  profile       UserProfile?
+  settings      UserSettings?
+  subscriptions UserSubscription[]
+  walletTransactions WalletTransaction[]
+}
+
+model PrivacyRequest {
+  id          String             @id @default(cuid())
+  userId      String
+  type        PrivacyRequestType
+  status      PrivacyRequestStatus @default(PENDING)
+  details     Json?
+  processedAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationTemplate {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  title       String
+  body        String
+  channel     String   @default("general")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  notifications UserNotification[]
+}
+
+model UserNotificationDevice {
+  id             String   @id @default(cuid())
+  userId         String
+  expoPushToken  String   @unique
+  platform       String
+  deviceName     String?
+  appVersion     String?
+  projectId      String?
+  isActive       Boolean  @default(true)
+  lastSeenAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserNotification {
+  id             String             @id @default(cuid())
+  userId         String
+  templateId     String?
+  title          String
+  body           String
+  type           String
+  channel        String             @default("general")
+  status         NotificationStatus @default(PENDING)
+  scheduledFor   DateTime?
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  template       NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  fullName           String
+  dateOfBirth        String?
+  timeOfBirth        String?
+  placeOfBirth       String?
+  gender             String?
+  relationshipStatus String?
+  birthDetailsVerified Boolean @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  responseTone         String   @default("Balanced")
+  responseDepth        String   @default("Deep Dive")
+  astrologyEnabled     Boolean  @default(true)
+  psychologyEnabled    Boolean  @default(true)
+  legalEnabled         Boolean  @default(false)
+  focusAreas           String[]
+  beliefSystem         String   @default("Astrology + Psychology")
+  guidanceType         String   @default("Advisory")
+  notifyDailyInsight   Boolean  @default(true)
+  notifyWeeklyReport   Boolean  @default(true)
+  notifyAlerts         Boolean  @default(true)
+  notifyEmailUpdates   Boolean  @default(false)
+  notifySmartNudges    Boolean  @default(true)
+  allowAiLearning      Boolean  @default(true)
+  anonymousMode        Boolean  @default(false)
+  storeChatHistory     Boolean  @default(true)
+  autoDeleteAfter90Days Boolean @default(false)
+  twoFactorEnabled     Boolean  @default(true)
+  biometricLock        Boolean  @default(true)
+  currentPlanLabel     String   @default("Free Beta")
+  creditsRemaining     Int      @default(42)
+  usageChatsPercent    Int      @default(60)
+  usageCallsPercent    Int      @default(30)
+  usageConsultsPercent Int      @default(10)
+  walletBalance        Int      @default(1250)
+  autoRecharge         Boolean  @default(true)
+  autoRechargeThreshold Int     @default(200)
+  autoRechargeAmount   Int      @default(500)
+  paymentMethod        String   @default("UPI")
+  googleCalendarConnected Boolean @default(true)
+  appleHealthConnected Boolean @default(false)
+  notesConnected       Boolean  @default(true)
+  themeChoice          String   @default("system")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Agent {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  role          String
+  domain        String
+  personality   String
+  totalExperts  Int
+  cta           String
+  comingSoon    Boolean  @default(false)
+  apiKeyRef     String
+  iconKey       String
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  searchAliases String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  experts       Expert[]
+  expertConversations ExpertConversation[]
+  expertSessions ExpertSession[]
+  plans         AgentPlan[]
+  payments      PaymentOrder[]
+  subscriptions UserSubscription[]
+}
+
+model Expert {
+  id              String        @id @default(cuid())
+  agentId         String
+  email           String?       @unique
+  password        String?
+  name            String
+  role            String
+  bio             String?
+  phone           String?
+  city            String?
+  specialties     String[]       @default([])
+  aiRating        Float         @default(4.5)
+  aiTestScore     Int           @default(85)
+  testStatus      ExpertTestStatus @default(NOT_STARTED)
+  testCompletedAt DateTime?
+  rating          Float         @default(4.5)
+  pricePerMinute  Int
+  status          ExpertStatus  @default(ONLINE)
+  languages       String[]
+  yearsExperience Int           @default(1)
+  avatarKey       String?
+  avatarUrl       String?
+  onboardingCompleted Boolean   @default(false)
+  isActive        Boolean       @default(true)
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  agent           Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  conversations   ExpertConversation[]
+  notifications   ExpertNotification[]
+  sessions        ExpertSession[]
+  testAttempts    ExpertTestAttempt[]
+}
+
+model ExpertNotification {
+  id        String   @id @default(cuid())
+  expertId  String
+  title     String
+  body      String
+  type      String
+  metadata  Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expert    Expert   @relation(fields: [expertId], references: [id], onDelete: Cascade)
+}
+
+model ExpertTestAttempt {
+  id         String   @id @default(cuid())
+  expertId   String
+  score      Int
+  passed     Boolean
+  transcript Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  expert     Expert   @relation(fields: [expertId], references: [id], onDelete: Cascade)
+}
+
+model AgentPlan {
+  id           String   @id @default(cuid())
+  agentId      String
+  title        String
+  price        Int
+  description  String?
+  features     String[]
+  cta          String
+  durationDays Int      @default(30)
+  isActive     Boolean  @default(true)
+  highlight    Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  agent         Agent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  payments      PaymentOrder[]
+  subscriptions UserSubscription[]
+}
+
+model PaymentOrder {
+  id                String              @id @default(cuid())
+  userId            String?
+  agentId           String
+  planId            String
+  receipt           String              @unique
+  amount            Int
+  currency          String              @default("INR")
+  status            PaymentOrderStatus  @default(CREATED)
+  provider          PaymentProvider     @default(RAZORPAY)
+  providerOrderId   String              @unique
+  providerPaymentId String?
+  providerSignature String?
+  customerName      String?
+  customerEmail     String?
+  customerContact   String?
+  notes             Json?
+  verifiedAt        DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  agent             Agent               @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  plan              AgentPlan           @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user              User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  subscription      UserSubscription?
+}
+
+model UserSubscription {
+  id             String             @id @default(cuid())
+  userId         String
+  agentId        String
+  planId         String
+  paymentOrderId String             @unique
+  status         SubscriptionStatus @default(ACTIVE)
+  amountPaid     Int
+  currency       String             @default("INR")
+  startedAt      DateTime           @default(now())
+  expiresAt      DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  agent          Agent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  paymentOrder   PaymentOrder       @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
+  plan           AgentPlan          @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WalletTransaction {
+  id            String                  @id @default(cuid())
+  userId        String
+  type          WalletTransactionType
+  status        WalletTransactionStatus @default(COMPLETED)
+  amount        Int
+  balanceAfter  Int
+  description   String
+  referenceType String?
+  referenceId   String?
+  metadata      Json?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  user          User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ExpertSession {
+  id               String              @id @default(cuid())
+  userId           String
+  expertId         String
+  agentId          String
+  status           ExpertSessionStatus @default(PENDING)
+  mode             ExpertSessionMode   @default(CHAT)
+  ratePerMinute    Int
+  purchasedMinutes Int                 @default(1)
+  totalCost        Int                 @default(0)
+  reviewRating     Int?
+  reviewComment    String?
+  reviewedAt       DateTime?
+  startedAt        DateTime?
+  endedAt          DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  agent            Agent               @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  expert           Expert              @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ExpertConversation {
+  id         String            @id @default(cuid())
+  userId     String
+  expertId   String
+  agentId    String
+  title      String
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  agent      Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  expert     Expert            @relation(fields: [expertId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   ExpertChatMessage[]
+
+  @@unique([userId, expertId])
+}
+
+model ExpertChatMessage {
+  id              String             @id @default(cuid())
+  conversationId  String
+  sender          ExpertChatSender
+  text            String?
+  imageUri        String?
+  audioUri        String?
+  audioDurationMs Int?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  conversation    ExpertConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model ChatConversation {
+  id         String        @id @default(cuid())
+  userId     String
+  title      String
+  agentName  String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   ChatMessage[]
+}
+
+model ChatMessage {
+  id             String            @id @default(cuid())
+  text           String
+  role           Role
+  userId         String?
+  conversationId String?
+  user           User?             @relation(fields: [userId], references: [id])
+  conversation   ChatConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime          @default(now())
+}
+
+enum Role {
+  USER
+  ASSISTANT
+}
+
+enum PaymentProvider {
+  RAZORPAY
+}
+
+enum ExpertStatus {
+  ONLINE
+  BUSY
+  OFFLINE
+}
+
+enum ExpertTestStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PASSED
+  FAILED
+}
+
+enum ExpertSessionStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ExpertSessionMode {
+  CHAT
+  CALL
+}
+
+enum ExpertChatSender {
+  USER
+  EXPERT
+}
+
+enum PaymentOrderStatus {
+  CREATED
+  PAID
+  FAILED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+enum PrivacyRequestType {
+  EXPORT_DATA
+  CLEAR_CHAT_HISTORY
+  DELETE_ACCOUNT
+}
+
+enum PrivacyRequestStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum WalletTransactionStatus {
+  COMPLETED
+  FAILED
+  PENDING
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  READ
+}

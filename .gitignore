@@ -1,0 +1,5 @@
+node_modules
+dist
+.postgres-data
+.postgres.log
+.env

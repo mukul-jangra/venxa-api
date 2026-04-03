@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Expert" ADD COLUMN     "aiTestScore" INTEGER NOT NULL DEFAULT 85;
